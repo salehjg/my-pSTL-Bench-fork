@@ -9,4 +9,8 @@ add_compile_definitions(PSTL_BENCH_USE_GPU)
 
 add_compile_definitions(PSTL_BENCH_BACKEND="CUDA")
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdpar")
+# Allow scripts to override -stdpar (e.g. -stdpar=gpu) via CMAKE_CXX_FLAGS.
+# Only append the default -stdpar if no -stdpar flag is already present.
+if (NOT CMAKE_CXX_FLAGS MATCHES "-stdpar")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdpar")
+endif ()
