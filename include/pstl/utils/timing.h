@@ -6,6 +6,8 @@
 
 #include <numa.h>
 
+#include "pstl/utils/profiler_markers.h"
+
 #ifdef PSTL_BENCH_USE_PAPI
 #include <papi.h>
 
@@ -134,6 +136,8 @@ namespace pstl
 	auto wrap_timing(benchmark::State & state, F && f, Args &&... args)
 	    -> std::enable_if_t<std::is_void_v<std::invoke_result_t<F, Args...>>> // SFINAE
 	{
+		const auto range_name = state.name() + "/" + std::to_string(state.range(0));
+		profiler_range_push(range_name.c_str());
 		hw_counters_begin(state);
 		const auto start = std::chrono::high_resolution_clock::now();
 		std::forward<F>(f)(std::forward<Args>(args)...);
@@ -142,6 +146,7 @@ namespace pstl
 #endif
 		const auto end = std::chrono::high_resolution_clock::now();
 		hw_counters_end(state);
+		profiler_range_pop();
 		state.SetIterationTime(std::chrono::duration<double>(end - start).count());
 	}
 
@@ -151,6 +156,8 @@ namespace pstl
 	    -> std::enable_if_t<not std::is_void_v<std::invoke_result_t<F, Args...>>, std::invoke_result_t<F, Args...>>
 	{
 		using return_t = std::invoke_result_t<F, Args...>;
+		const auto range_name = state.name() + "/" + std::to_string(state.range(0));
+		profiler_range_push(range_name.c_str());
 		hw_counters_begin(state);
 		const auto start = std::chrono::high_resolution_clock::now();
 		return_t   rv    = std::forward<F>(f)(std::forward<Args>(args)...);
@@ -159,6 +166,7 @@ namespace pstl
 #endif
 		const auto end = std::chrono::high_resolution_clock::now();
 		hw_counters_end(state);
+		profiler_range_pop();
 		state.SetIterationTime(std::chrono::duration<double>(end - start).count());
 		return rv;
 	}

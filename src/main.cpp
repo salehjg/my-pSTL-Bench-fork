@@ -14,6 +14,8 @@
 #include <likwid-marker.h>
 #endif
 
+#include "pstl/utils/profiler_markers.h"
+
 #include "pstl/benchmarks/pstl-benchmarks.h"
 
 // Run the benchmark
@@ -23,8 +25,20 @@ int main(int argc, char ** argv)
 	auto tbbThreadControl = init_tbb_thread_control();
 #endif
 
+	pstl::profiler_init();
+
 	benchmark::AddCustomContext("std::thread::hardware_concurrency()",
 	                            std::to_string(std::thread::hardware_concurrency()));
+
+#if defined(PSTL_BENCH_USE_NVTX)
+	benchmark::AddCustomContext("profiler_markers", "NVTX");
+#elif defined(PSTL_BENCH_USE_ITT)
+	benchmark::AddCustomContext("profiler_markers", "ITT");
+#elif defined(PSTL_BENCH_USE_ROCTX)
+	benchmark::AddCustomContext("profiler_markers", "ROCTX");
+#else
+	benchmark::AddCustomContext("profiler_markers", "none");
+#endif
 
 #if defined(PSTL_BENCH_USE_TBB)
 	benchmark::AddCustomContext("tbb #threads", std::to_string(tbb::global_control::active_value(

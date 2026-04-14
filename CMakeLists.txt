@@ -10,6 +10,10 @@ option(PSTL_BENCH_USE_PAR_ALLOC "Use the parallel allocator to avoid first-touch
 option(PSTL_BENCH_USE_PAPI "Use PAPI for performance counters" OFF)
 option(PSTL_BENCH_USE_LIKWID "Use LIKWID for performance counters" OFF)
 
+option(PSTL_BENCH_USE_NVTX  "Use NVIDIA NVTX profiler markers" OFF)
+option(PSTL_BENCH_USE_ITT   "Use Intel ITT profiler markers" OFF)
+option(PSTL_BENCH_USE_ROCTX "Use AMD roctx profiler markers" OFF)
+
 set(PSTL_BENCH_BACKEND CACHE STRING "Select the backend to use for std:: algorithms")
 set_property(CACHE PSTL_BENCH_BACKEND PROPERTY STRINGS TBB GNU HPX NVHPC_OMP NVHPC_CUDA ONEDPL_CPU ONEDPL_GPU)
 set(PSTL_BENCH_DATA_TYPE CACHE STRING "Select the data type to use for the benchmarks")
@@ -185,6 +189,74 @@ if (PSTL_BENCH_USE_LIKWID)
     target_include_directories(${PROJECT_NAME} PRIVATE ${LIKWID_INCLUDE_DIRS})
 endif ()
 # endregion LIKWID
+
+# region Profiler Markers (NVTX / ITT / ROCTX)
+# At most one marker library can be enabled at a time.
+set(_marker_count 0)
+foreach(_m PSTL_BENCH_USE_NVTX PSTL_BENCH_USE_ITT PSTL_BENCH_USE_ROCTX)
+    if (${${_m}})
+        math(EXPR _marker_count "${_marker_count} + 1")
+    endif ()
+endforeach()
+if (_marker_count GREATER 1)
+    message(FATAL_ERROR "Enable at most one of PSTL_BENCH_USE_NVTX, PSTL_BENCH_USE_ITT, PSTL_BENCH_USE_ROCTX")
+endif ()
+
+if (PSTL_BENCH_USE_NVTX)
+    add_compile_definitions(PSTL_BENCH_USE_NVTX)
+    # NVTX3 is header-only.  It uses dlopen() at runtime to load the injection
+    # library, so the only link dependency is libdl (via CMAKE_DL_LIBS).
+    CPMAddPackage(
+            NAME nvtx3
+            GITHUB_REPOSITORY NVIDIA/NVTX
+            GIT_TAG v3.5.0
+            DOWNLOAD_ONLY YES
+    )
+    if (nvtx3_ADDED)
+        target_include_directories(${PROJECT_NAME} PRIVATE "${nvtx3_SOURCE_DIR}/c/include")
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
+        message(STATUS "NVTX3 headers: ${nvtx3_SOURCE_DIR}/c/include")
+    else ()
+        message(FATAL_ERROR "Failed to fetch NVTX3")
+    endif ()
+endif ()
+
+if (PSTL_BENCH_USE_ITT)
+    add_compile_definitions(PSTL_BENCH_USE_ITT)
+    CPMAddPackage(
+            NAME ittapi
+            GITHUB_REPOSITORY intel/ittapi
+            VERSION 3.26.7
+    )
+    if (TARGET ittnotify)
+        list(APPEND LINK_LIBRARIES ittnotify)
+        message(STATUS "ITT (ittapi) target found")
+    else ()
+        message(FATAL_ERROR "Failed to build ittapi / ittnotify target not found")
+    endif ()
+endif ()
+
+if (PSTL_BENCH_USE_ROCTX)
+    add_compile_definitions(PSTL_BENCH_USE_ROCTX)
+    find_library(ROCTX_LIBRARY roctx64
+            HINTS ENV ROCM_PATH
+            PATH_SUFFIXES lib lib64
+    )
+    if (ROCTX_LIBRARY)
+        list(APPEND LINK_LIBRARIES ${ROCTX_LIBRARY})
+        find_path(ROCTX_INCLUDE_DIR roctx.h
+                HINTS ENV ROCM_PATH
+                PATH_SUFFIXES include include/roctracer
+        )
+        if (ROCTX_INCLUDE_DIR)
+            target_include_directories(${PROJECT_NAME} PRIVATE ${ROCTX_INCLUDE_DIR})
+        endif ()
+        message(STATUS "roctx found: ${ROCTX_LIBRARY}")
+    else ()
+        message(FATAL_ERROR "roctx (libroctx64) not found. Set ROCM_PATH.")
+    endif ()
+endif ()
+# endregion Profiler Markers
 
 # Add numa library
 list(APPEND LINK_LIBRARIES numa)
