@@ -114,6 +114,11 @@ endif ()
 
 add_compile_definitions(PSTL_BENCH_MIN_INPUT_SIZE=${PSTL_BENCH_MIN_INPUT_SIZE})
 add_compile_definitions(PSTL_BENCH_MAX_INPUT_SIZE=${PSTL_BENCH_MAX_INPUT_SIZE})
+
+if (NOT DEFINED ${PSTL_BENCH_RANGE_MULTIPLIER})
+    set(PSTL_BENCH_RANGE_MULTIPLIER 2 CACHE STRING "Multiplier for problem size increments (2 = double, 4 = quadruple)")
+endif ()
+add_compile_definitions(PSTL_BENCH_RANGE_MULTIPLIER=${PSTL_BENCH_RANGE_MULTIPLIER})
 # endregion input size
 
 # region for_each kernel iterations

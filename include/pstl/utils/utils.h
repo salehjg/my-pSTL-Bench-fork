@@ -20,8 +20,12 @@
 		    return *(std::min_element(std::begin(v), std::end(v)));                                                    \
 	    }) -> UseManualTime()
 
+#ifndef PSTL_BENCH_RANGE_MULTIPLIER
+#define PSTL_BENCH_RANGE_MULTIPLIER 2
+#endif
+
 #define PSTL_BENCH_BENCHMARK_PARAMETERS                               \
-	PSTL_BENCH_CUSTOM_STATISTICS->RangeMultiplier(2)                  \
+	PSTL_BENCH_CUSTOM_STATISTICS->RangeMultiplier(PSTL_BENCH_RANGE_MULTIPLIER) \
 	    ->Range(PSTL_BENCH_MIN_INPUT_SIZE, PSTL_BENCH_MAX_INPUT_SIZE) \
 	    ->UseManualTime();
 
