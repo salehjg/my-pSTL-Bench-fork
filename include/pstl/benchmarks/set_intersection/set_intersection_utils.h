@@ -19,10 +19,15 @@ namespace benchmark_set_intersection
 		auto data2 = pstl::generate_increment(execution_policy, size / 2, static_cast<pstl::elem_t>(size / 4),
 		                                      static_cast<pstl::elem_t>(1));
 
-		const auto max_size = std::min(data1.size(), data2.size());
+		// result: sized to the exact expected output count.
+		const auto result_size = std::min(data1.size(), data2.size());
+		auto       result = std::vector<pstl::elem_t>(result_size, std::numeric_limits<pstl::elem_t>::quiet_NaN());
 
-		auto result = std::vector<pstl::elem_t>(max_size, std::numeric_limits<pstl::elem_t>::quiet_NaN());
-		auto output = result;
+		// output: sized to data1.size() (worst-case).  oneDPL's GPU backend
+		// may create a SYCL buffer as large as the first input range when
+		// wrapping the output iterator.  A smaller allocation causes heap
+		// corruption on CUDA.
+		auto output = std::vector<pstl::elem_t>(size, std::numeric_limits<pstl::elem_t>::quiet_NaN());
 
 		std::ignore = std::set_intersection(data1.begin(), data1.end(), data2.begin(), data2.end(), result.begin());
 		std::sort(result.begin(), result.end());
@@ -31,9 +36,9 @@ namespace benchmark_set_intersection
 		{
 			pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, data1, data2, output);
 
-			std::sort(output.begin(), output.end());
+			std::sort(output.begin(), output.begin() + result_size);
 
-			assert(std::equal(result.begin(), result.end(), output.begin(), output.end()));
+			assert(std::equal(result.begin(), result.end(), output.begin(), output.begin() + result_size));
 
 			std::fill(output.begin(), output.end(), std::numeric_limits<pstl::elem_t>::quiet_NaN());
 		}

@@ -19,8 +19,15 @@ namespace benchmark_set_difference
 		auto data2 = pstl::generate_increment(execution_policy, size / 2, static_cast<pstl::elem_t>(size / 4),
 		                                      static_cast<pstl::elem_t>(1));
 
-		auto result = std::vector<pstl::elem_t>(size - size / 2, std::numeric_limits<pstl::elem_t>::quiet_NaN());
-		auto output = result;
+		// result: sized to the exact expected output count.
+		const auto result_size = size - size / 2;
+		auto       result      = std::vector<pstl::elem_t>(result_size, std::numeric_limits<pstl::elem_t>::quiet_NaN());
+
+		// output: sized to data1.size() (worst-case).  oneDPL's GPU backend
+		// may create a SYCL buffer as large as the first input range when
+		// wrapping the output iterator.  A smaller allocation causes heap
+		// corruption on CUDA.
+		auto output = std::vector<pstl::elem_t>(size, std::numeric_limits<pstl::elem_t>::quiet_NaN());
 
 		std::ignore = std::set_difference(data1.begin(), data1.end(), data2.begin(), data2.end(), result.begin());
 		std::sort(result.begin(), result.end());
@@ -29,9 +36,9 @@ namespace benchmark_set_difference
 		{
 			pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, data1, data2, output);
 
-			std::sort(output.begin(), output.end());
+			std::sort(output.begin(), output.begin() + result_size);
 
-			assert(std::equal(result.begin(), result.end(), output.begin(), output.end()));
+			assert(std::equal(result.begin(), result.end(), output.begin(), output.begin() + result_size));
 
 			std::fill(output.begin(), output.end(), std::numeric_limits<pstl::elem_t>::quiet_NaN());
 		}
