@@ -49,10 +49,18 @@ int main(int argc, char ** argv)
 	benchmark::AddCustomContext("profiler_markers", "none");
 #endif
 
+#ifdef PSTL_BENCH_USE_GPU
+	benchmark::AddCustomContext("device_type", "gpu");
+#else
+	benchmark::AddCustomContext("device_type", "cpu");
+#endif
+
 #if defined(PSTL_BENCH_ONEDPL_GPU_USM)
 	benchmark::AddCustomContext("gpu_memory", "USM_shared");
 #elif defined(PSTL_BENCH_USE_GPU)
 	benchmark::AddCustomContext("gpu_memory", "host_iterators");
+#else
+	benchmark::AddCustomContext("gpu_memory", "none");
 #endif
 
 #if defined(PSTL_BENCH_USE_TBB)
@@ -66,11 +74,41 @@ int main(int argc, char ** argv)
 
 #ifdef PSTL_BENCH_USE_PAPI
 	benchmark::AddCustomContext("PAPI", "enabled");
+	benchmark::AddCustomContext("opt_papi", "ON");
+#else
+	benchmark::AddCustomContext("opt_papi", "OFF");
 #endif
 
 #ifdef PSTL_BENCH_USE_LIKWID
 	benchmark::AddCustomContext("LIKWID", "enabled");
+	benchmark::AddCustomContext("opt_likwid", "ON");
 	LIKWID_MARKER_INIT;
+#else
+	benchmark::AddCustomContext("opt_likwid", "OFF");
+#endif
+
+#ifdef PSTL_BENCH_USE_NVTX
+	benchmark::AddCustomContext("opt_nvtx", "ON");
+#else
+	benchmark::AddCustomContext("opt_nvtx", "OFF");
+#endif
+
+#ifdef PSTL_BENCH_USE_ITT
+	benchmark::AddCustomContext("opt_itt", "ON");
+#else
+	benchmark::AddCustomContext("opt_itt", "OFF");
+#endif
+
+#ifdef PSTL_BENCH_USE_ROCTX
+	benchmark::AddCustomContext("opt_roctx", "ON");
+#else
+	benchmark::AddCustomContext("opt_roctx", "OFF");
+#endif
+
+#ifdef PSTL_BENCH_USE_PAR_ALLOC
+	benchmark::AddCustomContext("opt_par_alloc", "ON");
+#else
+	benchmark::AddCustomContext("opt_par_alloc", "OFF");
 #endif
 
 	benchmark::Initialize(&argc, argv);
