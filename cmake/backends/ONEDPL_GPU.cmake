@@ -8,6 +8,16 @@ add_compile_definitions(PSTL_BENCH_USE_ONEDPL)
 
 add_compile_definitions(PSTL_BENCH_BACKEND="ONEDPL_GPU")
 
+# USM shared memory: allocate data with sycl::malloc_shared so oneDPL
+# avoids creating temporary SYCL buffers on every algorithm call.
+option(PSTL_BENCH_ONEDPL_GPU_USM "Use SYCL USM shared memory instead of host iterators (ONEDPL_GPU only)" OFF)
+if (PSTL_BENCH_ONEDPL_GPU_USM)
+    add_compile_definitions(PSTL_BENCH_ONEDPL_GPU_USM)
+    message(STATUS "ONEDPL_GPU: USM shared memory ENABLED")
+else ()
+    message(STATUS "ONEDPL_GPU: USM shared memory DISABLED (host iterators)")
+endif ()
+
 # Find Intel oneAPI DPC++ Library (oneDPL)
 find_package(oneDPL REQUIRED)
 

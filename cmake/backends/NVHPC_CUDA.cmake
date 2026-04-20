@@ -7,7 +7,7 @@ endif ()
 add_compile_definitions(PSTL_BENCH_USE_PSTL)
 add_compile_definitions(PSTL_BENCH_USE_GPU)
 
-add_compile_definitions(PSTL_BENCH_BACKEND="CUDA")
+add_compile_definitions(PSTL_BENCH_BACKEND="NVHPC_CUDA")
 
 # Allow scripts to override -stdpar (e.g. -stdpar=gpu) via CMAKE_CXX_FLAGS.
 # Only append the default -stdpar if no -stdpar flag is already present.

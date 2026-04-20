@@ -15,6 +15,7 @@
 #endif
 
 #include "pstl/utils/profiler_markers.h"
+#include "pstl/utils/benchmark_naming.h"
 
 #include "pstl/benchmarks/pstl-benchmarks.h"
 
@@ -30,6 +31,14 @@ int main(int argc, char ** argv)
 	benchmark::AddCustomContext("std::thread::hardware_concurrency()",
 	                            std::to_string(std::thread::hardware_concurrency()));
 
+#ifdef PSTL_BENCH_COMPILER
+	benchmark::AddCustomContext("compiler", XSTRINGIFY(PSTL_BENCH_COMPILER));
+#endif
+
+#ifdef PSTL_BENCH_BACKEND
+	benchmark::AddCustomContext("backend", XSTRINGIFY(PSTL_BENCH_BACKEND));
+#endif
+
 #if defined(PSTL_BENCH_USE_NVTX)
 	benchmark::AddCustomContext("profiler_markers", "NVTX");
 #elif defined(PSTL_BENCH_USE_ITT)
@@ -38,6 +47,12 @@ int main(int argc, char ** argv)
 	benchmark::AddCustomContext("profiler_markers", "ROCTX");
 #else
 	benchmark::AddCustomContext("profiler_markers", "none");
+#endif
+
+#if defined(PSTL_BENCH_ONEDPL_GPU_USM)
+	benchmark::AddCustomContext("gpu_memory", "USM_shared");
+#elif defined(PSTL_BENCH_USE_GPU)
+	benchmark::AddCustomContext("gpu_memory", "host_iterators");
 #endif
 
 #if defined(PSTL_BENCH_USE_TBB)

@@ -27,7 +27,7 @@ namespace benchmark_set_difference
 		// may create a SYCL buffer as large as the first input range when
 		// wrapping the output iterator.  A smaller allocation causes heap
 		// corruption on CUDA.
-		auto output = std::vector<pstl::elem_t>(size, std::numeric_limits<pstl::elem_t>::quiet_NaN());
+		auto output = pstl::make_buffer(static_cast<std::size_t>(size), std::numeric_limits<pstl::elem_t>::quiet_NaN());
 
 		std::ignore = std::set_difference(data1.begin(), data1.end(), data2.begin(), data2.end(), result.begin());
 		std::sort(result.begin(), result.end());

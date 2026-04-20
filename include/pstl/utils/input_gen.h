@@ -6,6 +6,10 @@
 
 #include "pstl/utils/elem_t.h"
 
+#ifdef PSTL_BENCH_ONEDPL_GPU_USM
+#include "pstl/utils/usm_allocator.h"
+#endif
+
 #ifdef PSTL_BENCH_USE_PAR_ALLOC
 #include "pstl/utils/par_alloc.h"
 #include <execution>
@@ -26,7 +30,12 @@
 
 namespace pstl
 {
-#ifdef PSTL_BENCH_USE_PAR_ALLOC
+#ifdef PSTL_BENCH_ONEDPL_GPU_USM
+	// USM shared allocator: iterators point to device-accessible memory,
+	// avoiding the per-call SYCL-buffer round trip with host pointers.
+	template<typename VALUE_TYPE, typename ExecutionPolicy>
+	using vector = std::vector<VALUE_TYPE, pstl::usm_shared_allocator<VALUE_TYPE>>;
+#elif defined(PSTL_BENCH_USE_PAR_ALLOC)
 	template<typename VALUE_TYPE, typename ExecutionPolicy,
 	         typename = std::enable_if_t<std::is_execution_policy<ExecutionPolicy>::value>>
 	using vector = std::vector<VALUE_TYPE, pstl::par_alloc<VALUE_TYPE, ExecutionPolicy>>;
@@ -34,6 +43,20 @@ namespace pstl
 	template<typename VALUE_TYPE, typename ExecutionPolicy>
 	using vector = std::vector<VALUE_TYPE>;
 #endif
+
+	/**
+	 * Creates a vector suitable for GPU algorithm output.
+	 * Uses USM when PSTL_BENCH_ONEDPL_GPU_USM is enabled, otherwise std::vector.
+	 */
+	template<typename T>
+	auto make_buffer(std::size_t size, T init_val)
+	{
+#ifdef PSTL_BENCH_ONEDPL_GPU_USM
+		return std::vector<T, pstl::usm_shared_allocator<T>>(size, init_val);
+#else
+		return std::vector<T>(size, init_val);
+#endif
+	}
 
 	/**
      * Allows to create a vector using the allocation strategy configured

@@ -6,6 +6,6 @@ endif ()
 
 add_compile_definitions(PSTL_BENCH_USE_PSTL)
 
-add_compile_definitions(PSTL_BENCH_BACKEND="OMP")
+add_compile_definitions(PSTL_BENCH_BACKEND="NVHPC_OMP")
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdpar=multicore")
