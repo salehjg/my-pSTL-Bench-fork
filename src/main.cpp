@@ -2,6 +2,8 @@
 #include <hpx/hpx_main.hpp>
 #endif
 
+#include <cstdlib>
+#include <fstream>
 #include <thread>
 
 #include <benchmark/benchmark.h>
@@ -119,6 +121,14 @@ int main(int argc, char ** argv)
 #ifdef PSTL_BENCH_USE_LIKWID
 	LIKWID_MARKER_CLOSE;
 #endif
+
+	// Write status file to signal clean completion (used by recipe runners
+	// to detect killed processes and resume from where they left off).
+	const char * status_path = std::getenv("PSTL_BENCH_STATUS_FILE");
+	if (status_path)
+	{
+		std::ofstream(status_path) << "OK" << std::endl;
+	}
 
 	return EXIT_SUCCESS;
 }
