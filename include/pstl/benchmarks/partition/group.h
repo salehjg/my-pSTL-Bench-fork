@@ -25,10 +25,14 @@ static void partition_std_wrapper(benchmark::State & state)
 	benchmark_partition::benchmark_wrapper<Policy>(state, benchmark_partition::partition_std);
 }
 
+#ifndef PSTL_BENCH_ONEDPL_GPU_NO_USM
 #define PARTITION_SEQ_WRAPPER                                                    \
 	BENCHMARK_TEMPLATE1(partition_std_wrapper, std::execution::sequenced_policy) \
 	    ->Name(PSTL_BENCH_BENCHMARK_NAME_WITH_BACKEND("SEQ", "std::partition"))  \
 	    ->PSTL_BENCH_BENCHMARK_PARAMETERS
+#else
+#define PARTITION_SEQ_WRAPPER
+#endif
 
 #ifdef PSTL_BENCH_USE_PSTL
 #define PARTITION_STD_WRAPPER                                                               \

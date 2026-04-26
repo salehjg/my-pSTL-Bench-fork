@@ -21,10 +21,14 @@ static void inclusive_scan_std_wrapper(benchmark::State & state)
 	benchmark_inclusive_scan::benchmark_wrapper<Policy>(state, benchmark_inclusive_scan::inclusive_scan_std);
 }
 
+#ifndef PSTL_BENCH_ONEDPL_GPU_NO_USM
 #define INCLUSIVE_SCAN_SEQ_WRAPPER                                                    \
 	BENCHMARK_TEMPLATE1(inclusive_scan_std_wrapper, std::execution::sequenced_policy) \
 	    ->Name(PSTL_BENCH_BENCHMARK_NAME_WITH_BACKEND("SEQ", "std::inclusive_scan"))  \
 	    ->PSTL_BENCH_BENCHMARK_PARAMETERS
+#else
+#define INCLUSIVE_SCAN_SEQ_WRAPPER
+#endif
 
 #ifdef PSTL_BENCH_USE_PSTL
 #define INCLUSIVE_SCAN_STD_WRAPPER                                                               \

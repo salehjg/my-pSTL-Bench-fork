@@ -22,6 +22,19 @@
 #include <likwid.h>
 #endif
 
+// ONEDPL_GPU: void-returning oneDPL algorithms (for_each, copy, sort, fill, ...)
+// submit the kernel and return without blocking.  Without an explicit wait
+// inside the timed region, the clock would stop while the kernel is still
+// running and we'd report submission-only times — the same trap the
+// standalone tests in scripts2/transfer_overhead_tests/ avoid by calling
+// q.wait() right before reading the end timestamp.
+#if defined(PSTL_BENCH_USE_GPU) && defined(PSTL_BENCH_USE_ONEDPL)
+#include "pstl/utils/sycl_queue.h"
+#define PSTL_BENCH_ONEDPL_GPU_SYNC() ::pstl::onedpl_gpu_queue().wait()
+#else
+#define PSTL_BENCH_ONEDPL_GPU_SYNC() ((void) 0)
+#endif
+
 namespace pstl
 {
 	template<typename Function>
@@ -141,6 +154,7 @@ namespace pstl
 		hw_counters_begin(state);
 		const auto start = std::chrono::high_resolution_clock::now();
 		std::forward<F>(f)(std::forward<Args>(args)...);
+		PSTL_BENCH_ONEDPL_GPU_SYNC();
 #if defined(PSTL_BENCH_USE_GPU) and defined(PSTL_BENCH_GPU_CONTINUOUS_TRANSFERS)
 		touch_memory(args...);
 #endif
@@ -161,6 +175,7 @@ namespace pstl
 		hw_counters_begin(state);
 		const auto start = std::chrono::high_resolution_clock::now();
 		return_t   rv    = std::forward<F>(f)(std::forward<Args>(args)...);
+		PSTL_BENCH_ONEDPL_GPU_SYNC();
 #if defined(PSTL_BENCH_USE_GPU) and defined(PSTL_BENCH_GPU_CONTINUOUS_TRANSFERS)
 		touch_memory(args...);
 #endif

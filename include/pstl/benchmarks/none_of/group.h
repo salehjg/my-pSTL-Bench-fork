@@ -21,10 +21,14 @@ static void none_of_std_wrapper(benchmark::State & state)
 	benchmark_none_of::benchmark_wrapper<Policy>(state, benchmark_none_of::none_of_std);
 }
 
+#ifndef PSTL_BENCH_ONEDPL_GPU_NO_USM
 #define NONE_OF_SEQ_WRAPPER                                                    \
 	BENCHMARK_TEMPLATE1(none_of_std_wrapper, std::execution::sequenced_policy) \
 	    ->Name(PSTL_BENCH_BENCHMARK_NAME_WITH_BACKEND("SEQ", "std::none_of"))  \
 	    ->PSTL_BENCH_BENCHMARK_PARAMETERS
+#else
+#define NONE_OF_SEQ_WRAPPER
+#endif
 
 #ifdef PSTL_BENCH_USE_PSTL
 #define NONE_OF_STD_WRAPPER                                                               \

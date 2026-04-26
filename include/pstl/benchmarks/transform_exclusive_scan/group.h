@@ -24,10 +24,14 @@ static void transform_exclusive_scan_std_wrapper(benchmark::State & state)
 	    state, benchmark_transform_exclusive_scan::transform_exclusive_scan_std);
 }
 
+#ifndef PSTL_BENCH_ONEDPL_GPU_NO_USM
 #define TRANSFORM_EXCLUSIVE_SCAN_SEQ_WRAPPER                                                    \
 	BENCHMARK_TEMPLATE1(transform_exclusive_scan_std_wrapper, std::execution::sequenced_policy) \
 	    ->Name(PSTL_BENCH_BENCHMARK_NAME_WITH_BACKEND("SEQ", "std::transform_exclusive_scan"))  \
 	    ->PSTL_BENCH_BENCHMARK_PARAMETERS
+#else
+#define TRANSFORM_EXCLUSIVE_SCAN_SEQ_WRAPPER
+#endif
 
 #ifdef PSTL_BENCH_USE_PSTL
 #define TRANSFORM_EXCLUSIVE_SCAN_STD_WRAPPER                                                               \

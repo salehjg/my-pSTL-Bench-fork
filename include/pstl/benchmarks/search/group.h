@@ -25,10 +25,14 @@ static void search_std_wrapper(benchmark::State & state)
 	benchmark_search::benchmark_wrapper<Policy>(state, benchmark_search::search_std);
 }
 
+#ifndef PSTL_BENCH_ONEDPL_GPU_NO_USM
 #define SEARCH_SEQ_WRAPPER                                                    \
 	BENCHMARK_TEMPLATE1(search_std_wrapper, std::execution::sequenced_policy) \
 	    ->Name(PSTL_BENCH_BENCHMARK_NAME_WITH_BACKEND("SEQ", "std::search"))  \
 	    ->PSTL_BENCH_BENCHMARK_PARAMETERS
+#else
+#define SEARCH_SEQ_WRAPPER
+#endif
 
 #ifdef PSTL_BENCH_USE_PSTL
 #define SEARCH_STD_WRAPPER                                                               \

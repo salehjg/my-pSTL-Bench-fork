@@ -23,10 +23,14 @@ static void transform_reduce_std_wrapper(benchmark::State & state)
 	benchmark_transform_reduce::benchmark_wrapper<Policy>(state, benchmark_transform_reduce::transform_reduce_std);
 }
 
+#ifndef PSTL_BENCH_ONEDPL_GPU_NO_USM
 #define TRANSFORM_REDUCE_SEQ_WRAPPER                                                    \
 	BENCHMARK_TEMPLATE1(transform_reduce_std_wrapper, std::execution::sequenced_policy) \
 	    ->Name(PSTL_BENCH_BENCHMARK_NAME_WITH_BACKEND("SEQ", "std::transform_reduce"))  \
 	    ->PSTL_BENCH_BENCHMARK_PARAMETERS
+#else
+#define TRANSFORM_REDUCE_SEQ_WRAPPER
+#endif
 
 #ifdef PSTL_BENCH_USE_PSTL
 #define TRANSFORM_REDUCE_STD_WRAPPER                                                               \

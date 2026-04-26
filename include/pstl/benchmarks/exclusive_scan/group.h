@@ -21,10 +21,14 @@ static void exclusive_scan_std_wrapper(benchmark::State & state)
 	benchmark_exclusive_scan::benchmark_wrapper<Policy>(state, benchmark_exclusive_scan::exclusive_scan_std);
 }
 
+#ifndef PSTL_BENCH_ONEDPL_GPU_NO_USM
 #define EXCLUSIVE_SCAN_SEQ_WRAPPER                                                    \
 	BENCHMARK_TEMPLATE1(exclusive_scan_std_wrapper, std::execution::sequenced_policy) \
 	    ->Name(PSTL_BENCH_BENCHMARK_NAME_WITH_BACKEND("SEQ", "std::exclusive_scan"))  \
 	    ->PSTL_BENCH_BENCHMARK_PARAMETERS
+#else
+#define EXCLUSIVE_SCAN_SEQ_WRAPPER
+#endif
 
 #ifdef PSTL_BENCH_USE_PSTL
 #define EXCLUSIVE_SCAN_STD_WRAPPER                                                               \
