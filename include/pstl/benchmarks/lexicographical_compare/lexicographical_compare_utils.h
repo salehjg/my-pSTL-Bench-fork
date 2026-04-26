@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -16,24 +17,25 @@ namespace benchmark_lexicographical_compare
 
 		const auto & size = state.range(0);
 
-		const auto data1 = pstl::generate_increment(execution_policy, size);
-		const auto data2 = pstl::generate_increment(execution_policy, size);
+		auto data1 = pstl::generate_increment(execution_policy, size);
+		auto data2 = pstl::generate_increment(execution_policy, size);
 
-		std::optional<bool> verification_result;
-
-		for (auto _ : state)
+		bool last_output = false;
 		{
-			const auto output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, data1, data2);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench1{ data1 };
+			pstl::bench_input bench2{ data2 };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					const auto result =
-					    std::lexicographical_compare(data1.begin(), data1.end(), data2.begin(), data2.end());
-					return pstl::are_equivalent(result, output);
-				});
+				last_output =
+				    pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench1, bench2);
 			}
 		}
+
+		auto verification_result = pstl::verify([&]() {
+			const auto result =
+			    std::lexicographical_compare(data1.begin(), data1.end(), data2.begin(), data2.end());
+			return pstl::are_equivalent(result, last_output);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, data1, data2));
 

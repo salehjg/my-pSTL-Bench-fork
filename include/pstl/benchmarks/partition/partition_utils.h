@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -27,20 +28,21 @@ namespace benchmark_partition
 
 		auto input = pstl::generate_increment(execution_policy, size);
 
-		std::optional<bool> verification_result;
-
-		for (auto _ : state)
 		{
-			std::shuffle(input.begin(), input.end(), std::mt19937(std::random_device()()));
-
-			pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input, condition);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_result =
-				    pstl::verify([&]() { return std::is_partitioned(input.begin(), input.end(), condition); });
+				{
+					auto && h = bench.host_view();
+					std::shuffle(std::begin(h), std::end(h), std::mt19937(std::random_device()()));
+				}
+
+				pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench, condition);
 			}
 		}
+
+		auto verification_result =
+		    pstl::verify([&]() { return std::is_partitioned(input.begin(), input.end(), condition); });
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

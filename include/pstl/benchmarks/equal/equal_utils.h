@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -16,22 +17,21 @@ namespace benchmark_equal
 
 		const auto & size = state.range(0);
 
-		const auto data1 = pstl::generate_increment(execution_policy, size);
+		auto data1 = pstl::generate_increment(execution_policy, size);
 
 		auto data2 = data1;
 
-		std::optional<bool> verification_passed;
-
-		for (auto _ : state)
 		{
-			pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, data1, data2);
-
-			if (not verification_passed.has_value())
+			pstl::bench_input bench1{ data1 };
+			pstl::bench_input bench2{ data2 };
+			for (auto _ : state)
 			{
-				verification_passed =
-				    pstl::verify([&]() { return std::equal(data1.begin(), data1.end(), data2.begin()); });
+				pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench1, bench2);
 			}
 		}
+
+		auto verification_passed =
+		    pstl::verify([&]() { return std::equal(data1.begin(), data1.end(), data2.begin()); });
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, data1, data2));
 

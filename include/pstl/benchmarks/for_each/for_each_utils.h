@@ -5,6 +5,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -42,22 +43,20 @@ namespace benchmark_for_each
 		const char * env_p = std::getenv("PSTL_BENCH_FOR_EACH_KERNEL_ITS");
 		if (env_p) { its = std::strtoul(env_p, nullptr, 10); }
 
-		std::optional<bool> verification_passed;
-
-		for (auto _ : state)
 		{
-			pstl::wrap_timing(state, std::forward<Function>(f), execution_policy, data,
-			                  [=](auto & elem) { kernel(elem, its); });
-
-			if (not verification_passed.has_value())
+			pstl::bench_input bench{ data };
+			for (auto _ : state)
 			{
-				verification_passed = pstl::verify([&]() {
-					auto solution = pstl::generate_increment(execution_policy, size);
-					std::for_each(std::begin(solution), std::end(solution), [=](auto & elem) { kernel(elem, its); });
-					return pstl::are_equivalent(data, solution);
-				});
+				pstl::wrap_timing(state, std::forward<Function>(f), execution_policy, bench,
+				                  [=](auto & elem) { kernel(elem, its); });
 			}
-		}
+		} // bench dtor in NO_USM -> single device->host writeback to `data`
+
+		auto verification_passed = pstl::verify([&]() {
+			auto solution = pstl::generate_increment(execution_policy, size);
+			std::for_each(std::begin(solution), std::end(solution), [=](auto & elem) { kernel(elem, its); });
+			return pstl::are_equivalent(data, solution);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, data));
 

@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -16,29 +17,31 @@ namespace benchmark_count
 
 		const auto & size = state.range(0);
 
-		const auto input = pstl::generate_increment(execution_policy, size);
+		auto input = pstl::generate_increment(execution_policy, size);
 
 		static auto rd = std::random_device{};
 
 		static std::minstd_rand               engine{ rd() };
 		std::uniform_int_distribution<size_t> gen(0, input.size() - 1);
 
-		std::optional<bool> verification_result = std::nullopt;
-
-		for (auto _ : state)
+		using count_t = decltype(std::count(input.begin(), input.end(), pstl::elem_t{}));
+		count_t      last_output{};
+		pstl::elem_t last_value{};
 		{
-			const auto value = gen(engine);
-
-			const auto output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input, value);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					const auto solution = std::count(input.begin(), input.end(), value);
-					return pstl::are_equivalent(output, solution);
-				});
+				const auto value = static_cast<pstl::elem_t>(gen(engine));
+				last_value       = value;
+				last_output =
+				    pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench, value);
 			}
 		}
+
+		auto verification_result = pstl::verify([&]() {
+			const auto solution = std::count(input.begin(), input.end(), last_value);
+			return pstl::are_equivalent(last_output, solution);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

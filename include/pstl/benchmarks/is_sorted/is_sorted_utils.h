@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -18,20 +19,19 @@ namespace benchmark_is_sorted
 
 		auto input = pstl::generate_increment(execution_policy, size);
 
-		std::optional<bool> verification_passed;
-
-		for (auto _ : state)
+		bool last_output = false;
 		{
-			const auto output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input);
-
-			if (not verification_passed.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_passed = pstl::verify([&]() {
-					const auto solution = std::is_sorted(input.begin(), input.end());
-					return pstl::are_equivalent(output, solution);
-				});
+				last_output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench);
 			}
 		}
+
+		auto verification_passed = pstl::verify([&]() {
+			const auto solution = std::is_sorted(input.begin(), input.end());
+			return pstl::are_equivalent(last_output, solution);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -19,29 +20,33 @@ namespace benchmark_merge
 		auto input  = pstl::generate_increment(execution_policy, size);
 		auto output = input;
 
-		std::optional<bool> verification_result;
-
-		for (auto _ : state)
 		{
-			std::shuffle(input.begin(), input.end(), std::mt19937{ std::random_device{}() });
-
-			auto middle = input.begin() + (input.size() / 2);
-
-			std::sort(input.begin(), middle);
-			std::sort(middle, input.end());
-
-			pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input.begin(), middle, middle,
-			                  input.end(), output.begin());
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench_in{ input };
+			pstl::bench_input bench_out{ output };
+			const auto        half = bench_in.size() / 2;
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					return std::is_sorted(output.begin(), output.end()) and
-					       std::includes(output.begin(), output.end(), input.begin(), middle) and
-					       std::includes(output.begin(), output.end(), middle, input.end());
-				});
+				{
+					auto && h        = bench_in.host_view();
+					auto    h_middle = std::begin(h) + half;
+					std::shuffle(std::begin(h), std::end(h), std::mt19937{ std::random_device{}() });
+					std::sort(std::begin(h), h_middle);
+					std::sort(h_middle, std::end(h));
+				}
+
+				auto middle = bench_in.begin() + half;
+
+				pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench_in.begin(), middle,
+				                  middle, bench_in.end(), bench_out.begin());
 			}
 		}
+
+		auto middle = input.begin() + (input.size() / 2);
+		auto verification_result = pstl::verify([&]() {
+			return std::is_sorted(output.begin(), output.end()) and
+			       std::includes(output.begin(), output.end(), input.begin(), middle) and
+			       std::includes(output.begin(), output.end(), middle, input.end());
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

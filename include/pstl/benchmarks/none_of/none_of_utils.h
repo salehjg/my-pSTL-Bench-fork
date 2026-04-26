@@ -5,6 +5,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -23,20 +24,20 @@ namespace benchmark_none_of
 			return val > size;
 		};
 
-		std::optional<bool> verification_result;
-
-		for (auto _ : state)
+		bool last_output = false;
 		{
-			const auto output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input, condition);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					const auto result = true;
-					return pstl::are_equivalent(result, output);
-				});
+				last_output =
+				    pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench, condition);
 			}
 		}
+
+		auto verification_result = pstl::verify([&]() {
+			const auto result = true;
+			return pstl::are_equivalent(result, last_output);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

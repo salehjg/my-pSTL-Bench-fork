@@ -5,6 +5,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -30,31 +31,36 @@ namespace benchmark_set_difference
 		auto output = pstl::make_buffer(static_cast<std::size_t>(size),
 		                                std::numeric_limits<pstl::elem_t>::quiet_NaN());
 
-		std::optional<bool> verification_result;
-
-		for (auto _ : state)
 		{
-			pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, data1, data2, output);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench1{ data1 };
+			pstl::bench_input bench2{ data2 };
+			pstl::bench_input bench_out{ output };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					auto solution = std::vector<pstl::elem_t>(
-						result_size, std::numeric_limits<pstl::elem_t>::quiet_NaN());
-					std::set_difference(data1.begin(), data1.end(),
-					                    data2.begin(), data2.end(),
-					                    solution.begin());
+				pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench1, bench2, bench_out);
 
-					// Compare only the meaningful prefix of `output`; the tail
-					// is NaN padding required by the oversized allocation.
-					auto output_prefix = std::vector<pstl::elem_t>(
-						output.begin(), output.begin() + result_size);
-					return pstl::are_equivalent(output_prefix, solution);
-				});
+				{
+					auto && h = bench_out.host_view();
+					std::fill(std::begin(h), std::end(h), std::numeric_limits<pstl::elem_t>::quiet_NaN());
+				}
 			}
-
-			std::fill(output.begin(), output.end(), std::numeric_limits<pstl::elem_t>::quiet_NaN());
 		}
+
+		auto verification_result = pstl::verify([&]() {
+			// The per-iter reset filled `output` with NaN, so re-run F once outside
+			// the timed loop on the host-fresh inputs to populate output.
+			std::fill(output.begin(), output.end(), std::numeric_limits<pstl::elem_t>::quiet_NaN());
+			F(execution_policy, data1, data2, output);
+
+			auto solution = std::vector<pstl::elem_t>(result_size, std::numeric_limits<pstl::elem_t>::quiet_NaN());
+			std::set_difference(data1.begin(), data1.end(), data2.begin(), data2.end(), solution.begin());
+
+			// Compare only the meaningful prefix of `output`; the tail is NaN
+			// padding required by the oversized allocation.
+			auto output_prefix =
+			    std::vector<pstl::elem_t>(output.begin(), output.begin() + result_size);
+			return pstl::are_equivalent(output_prefix, solution);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, data1, data2));
 		pstl::set_verification_counter(state, verification_result);

@@ -2,6 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -21,22 +22,22 @@ namespace benchmark_transform_exclusive_scan
 		auto input  = pstl::generate_increment(execution_policy, size);
 		auto output = input;
 
-		std::optional<bool> verification_result;
-
-		for (auto _ : state)
 		{
-			std::ignore = pstl::wrap_timing(state, std::forward<Function>(f), execution_policy, input, output, kernel);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench_in{ input };
+			pstl::bench_input bench_out{ output };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					auto solution = input;
-					std::ignore   = std::transform_exclusive_scan(input.begin(), input.end(), solution.begin(),
-					                                              pstl::elem_t{}, std::plus<>(), kernel);
-					return pstl::are_equivalent(output, solution);
-				});
+				std::ignore = pstl::wrap_timing(state, std::forward<Function>(f), execution_policy, bench_in, bench_out,
+				                                kernel);
 			}
 		}
+
+		auto verification_result = pstl::verify([&]() {
+			auto solution = input;
+			std::ignore   = std::transform_exclusive_scan(input.begin(), input.end(), solution.begin(), pstl::elem_t{},
+			                                              std::plus<>(), kernel);
+			return pstl::are_equivalent(output, solution);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -22,20 +23,20 @@ namespace benchmark_all_of
 			return val > 0;
 		};
 
-		std::optional<bool> verification_result = std::nullopt;
-
-		for (auto _ : state)
+		bool last_output = false;
 		{
-			const auto output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input, condition);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					const auto solution = std::all_of(input.begin(), input.end(), condition);
-					return pstl::are_equivalent(output, solution);
-				});
+				last_output =
+				    pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench, condition);
 			}
 		}
+
+		auto verification_result = pstl::verify([&]() {
+			const auto solution = std::all_of(input.begin(), input.end(), condition);
+			return pstl::are_equivalent(last_output, solution);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

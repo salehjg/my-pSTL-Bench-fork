@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -24,27 +25,42 @@ namespace benchmark_mismatch
 
 		auto data2 = data1;
 
-		std::optional<bool> verification_result;
-
-		for (auto _ : state)
+		std::ptrdiff_t last_first_offset = 0;
+		int64_t        last_idx          = 0;
 		{
-			const auto idx = gen(rng);
-			// Introduce a mismatch at a random position
-			data2[idx]     = data1[idx] + 1;
-
-			const auto output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, data1, data2);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench1{ data1 };
+			pstl::bench_input bench2{ data2 };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					const auto solution = std::mismatch(data1.begin(), data1.end(), data2.begin());
-					return (solution.first - data1.begin()) == (output.first - data1.begin());
-				});
-			}
+				const auto idx = gen(rng);
+				last_idx       = idx;
+				{
+					auto && h2 = bench2.host_view();
+					auto && h1 = bench1.host_view();
+					h2[idx]    = h1[idx] + pstl::elem_t{ 1 };
+				}
 
-			// Undo the mismatch for the next iteration
-			data2[idx] = data1[idx];
+				const auto output =
+				    pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench1, bench2);
+				last_first_offset = std::distance(bench1.begin(), output.first);
+
+				// Undo the mismatch for the next iteration
+				{
+					auto && h2 = bench2.host_view();
+					auto && h1 = bench1.host_view();
+					h2[idx]    = h1[idx];
+				}
+			}
 		}
+
+		// Re-introduce the mismatch so verify can compare std::mismatch on
+		// the host vectors against the offset captured from the algo.
+		data2[last_idx] = data1[last_idx] + pstl::elem_t{ 1 };
+
+		auto verification_result = pstl::verify([&]() {
+			const auto solution = std::mismatch(data1.begin(), data1.end(), data2.begin());
+			return (solution.first - data1.begin()) == last_first_offset;
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, data1, data2));
 

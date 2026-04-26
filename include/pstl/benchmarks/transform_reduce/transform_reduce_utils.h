@@ -2,6 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -20,22 +21,21 @@ namespace benchmark_transform_reduce
 
 		auto input = pstl::generate_increment(execution_policy, size);
 
-		std::optional<bool> verification_result;
-
-		for (auto _ : state)
+		pstl::elem_t last_output{};
 		{
-			const auto output =
-			    pstl::wrap_timing(state, std::forward<Function>(f), execution_policy, input, transform_kernel);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					const auto solution = std::transform_reduce(input.cbegin(), input.cend(), pstl::elem_t{},
-					                                            std::plus<>(), transform_kernel);
-					return pstl::are_equivalent(solution, output);
-				});
+				last_output =
+				    pstl::wrap_timing(state, std::forward<Function>(f), execution_policy, bench, transform_kernel);
 			}
 		}
+
+		auto verification_result = pstl::verify([&]() {
+			const auto solution = std::transform_reduce(input.cbegin(), input.cend(), pstl::elem_t{}, std::plus<>(),
+			                                            transform_kernel);
+			return pstl::are_equivalent(solution, last_output);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

@@ -9,6 +9,8 @@
 #include <new>
 #include <sycl/sycl.hpp>
 
+#include "pstl/utils/sycl_queue.h"
+
 namespace pstl
 {
 	template<typename T>
@@ -17,7 +19,7 @@ namespace pstl
 	public:
 		using value_type = T;
 
-		usm_shared_allocator() noexcept : q_(sycl::queue{}) {}
+		usm_shared_allocator() noexcept : q_(pstl::onedpl_gpu_queue()) {}
 		explicit usm_shared_allocator(sycl::queue q) noexcept : q_(q) {}
 
 		template<typename U>

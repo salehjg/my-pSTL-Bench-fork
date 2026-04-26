@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -22,21 +23,19 @@ namespace benchmark_generate
 			return pstl::elem_t{};
 		};
 
-		std::optional<bool> verification_passed;
-
-		for (auto _ : state)
 		{
-			pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input, generator);
-
-			if (not verification_passed.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_passed = pstl::verify([&]() {
-					auto solution = pstl::generate_increment(execution_policy, size);
-					std::generate(std::begin(solution), std::end(solution), generator);
-					return pstl::are_equivalent(input, solution);
-				});
+				pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench, generator);
 			}
 		}
+
+		auto verification_passed = pstl::verify([&]() {
+			auto solution = pstl::generate_increment(execution_policy, size);
+			std::generate(std::begin(solution), std::end(solution), generator);
+			return pstl::are_equivalent(input, solution);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

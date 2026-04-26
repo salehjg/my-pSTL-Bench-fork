@@ -8,14 +8,25 @@ add_compile_definitions(PSTL_BENCH_USE_ONEDPL)
 
 add_compile_definitions(PSTL_BENCH_BACKEND="ONEDPL_GPU")
 
-# USM shared memory: allocate data with sycl::malloc_shared so oneDPL
-# avoids creating temporary SYCL buffers on every algorithm call.
-option(PSTL_BENCH_ONEDPL_GPU_USM "Use SYCL USM shared memory instead of host iterators (ONEDPL_GPU only)" OFF)
-if (PSTL_BENCH_ONEDPL_GPU_USM)
+# Memory model — must be set explicitly. No default.
+#   USM     -> sycl::malloc_shared (host-addressable, auto-migrated)
+#   NO_USM  -> persistent sycl::buffer over the host vector
+# See docs/notes/onedpl_gpu_fix_plan.md.
+set(PSTL_BENCH_ONEDPL_GPU_MEMORY "" CACHE STRING
+        "ONEDPL_GPU memory model: USM | NO_USM (must be set explicitly)")
+set_property(CACHE PSTL_BENCH_ONEDPL_GPU_MEMORY PROPERTY STRINGS USM NO_USM)
+
+if (PSTL_BENCH_ONEDPL_GPU_MEMORY STREQUAL "USM")
     add_compile_definitions(PSTL_BENCH_ONEDPL_GPU_USM)
-    message(STATUS "ONEDPL_GPU: USM shared memory ENABLED")
+    message(STATUS "ONEDPL_GPU: memory model = USM (sycl::malloc_shared)")
+elseif (PSTL_BENCH_ONEDPL_GPU_MEMORY STREQUAL "NO_USM")
+    add_compile_definitions(PSTL_BENCH_ONEDPL_GPU_NO_USM)
+    message(STATUS "ONEDPL_GPU: memory model = NO_USM (persistent sycl::buffer)")
 else ()
-    message(STATUS "ONEDPL_GPU: USM shared memory DISABLED (host iterators)")
+    message(FATAL_ERROR
+            "PSTL_BENCH_ONEDPL_GPU_MEMORY must be set to USM or NO_USM "
+            "(got: '${PSTL_BENCH_ONEDPL_GPU_MEMORY}'). "
+            "Pass -DPSTL_BENCH_ONEDPL_GPU_MEMORY=USM or =NO_USM at configure time.")
 endif ()
 
 # Find Intel oneAPI DPC++ Library (oneDPL)

@@ -5,6 +5,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -29,28 +30,32 @@ namespace benchmark_find
 		// Random number generator
 		std::uniform_int_distribution<size_t> gen(0, size - 1);
 
-		const auto get_value = [&]() {
-			const auto index = gen(engine);
-			return input[index];
-		};
-
-		std::optional<bool> verification_passed;
-
-		for (auto _ : state)
+		pstl::elem_t   last_value{};
+		std::ptrdiff_t last_offset = -1;
 		{
-			// random value in [0,size)
-			const auto value = get_value();
-
-			const auto output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input, value);
-
-			if (not verification_passed.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_passed = pstl::verify([&]() {
-					const auto it = std::find(input.begin(), input.end(), value);
-					return it != input.end() && pstl::are_equivalent(*it, value);
-				});
+				pstl::elem_t value;
+				{
+					auto && h        = bench.host_view();
+					const auto index = gen(engine);
+					value            = h[index];
+				}
+				last_value = value;
+
+				const auto out_iter =
+				    pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench, value);
+				last_offset = (out_iter == bench.end())
+				                  ? std::ptrdiff_t{ -1 }
+				                  : std::distance(bench.begin(), out_iter);
 			}
 		}
+
+		auto verification_passed = pstl::verify([&]() {
+			if (last_offset < 0) { return false; }
+			return pstl::are_equivalent(input[last_offset], last_value);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

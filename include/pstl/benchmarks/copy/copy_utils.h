@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -16,22 +17,21 @@ namespace benchmark_copy
 
 		const auto & size = state.range(0);
 
-		const auto input = pstl::generate_increment(execution_policy, size);
+		auto input = pstl::generate_increment(execution_policy, size);
 
 		auto output = pstl::get_vector<Policy>(size);
 
-		std::optional<bool> verification_result = std::nullopt;
-
-		for (auto _ : state)
 		{
-			pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input, output);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench_in{ input };
+			pstl::bench_input bench_out{ output };
+			for (auto _ : state)
 			{
-				verification_result =
-				    pstl::verify([&]() { return std::equal(input.begin(), input.end(), output.begin()); });
+				pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench_in, bench_out);
 			}
 		}
+
+		auto verification_result =
+		    pstl::verify([&]() { return std::equal(input.begin(), input.end(), output.begin()); });
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input, output));
 

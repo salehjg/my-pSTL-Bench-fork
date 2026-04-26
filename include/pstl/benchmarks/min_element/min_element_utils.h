@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -19,20 +20,26 @@ namespace benchmark_min_element
 		auto input = pstl::generate_increment(execution_policy, size);
 		std::shuffle(input.begin(), input.end(), std::mt19937{ std::random_device{}() });
 
-		std::optional<bool> verification_result;
-
-		for (auto _ : state)
+		// bench_input is constructed AFTER the one-time host shuffle so the
+		// buffer is built over the already-shuffled host vector.
+		std::ptrdiff_t last_offset = -1;
 		{
-			const auto output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input);
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					const auto solution = std::min_element(input.begin(), input.end());
-					return pstl::are_equivalent(*solution, *output);
-				});
+				const auto out_iter =
+				    pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench);
+				last_offset = (out_iter == bench.end())
+				                  ? std::ptrdiff_t{ -1 }
+				                  : std::distance(bench.begin(), out_iter);
 			}
 		}
+
+		auto verification_result = pstl::verify([&]() {
+			if (last_offset < 0) { return false; }
+			const auto solution = std::min_element(input.begin(), input.end());
+			return pstl::are_equivalent(*solution, input[last_offset]);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

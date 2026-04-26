@@ -5,6 +5,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -25,24 +26,26 @@ namespace benchmark_any_of
 		static std::minstd_rand               engine{ rd() };
 		std::uniform_int_distribution<size_t> gen(0, input.size() - 1);
 
-		std::optional<bool> verification_result = std::nullopt;
-
-		for (auto _ : state)
+		bool last_output = false;
 		{
-			const auto index = gen(engine);
-			const auto value = input[index];
-
-			const auto output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input,
-			                                      [=](const auto & val) { return val == value; });
-
-			if (not verification_result.has_value())
+			pstl::bench_input bench{ input };
+			for (auto _ : state)
 			{
-				verification_result = pstl::verify([&]() {
-					const auto solution = true;
-					return pstl::are_equivalent(output, solution);
-				});
+				const auto index = gen(engine);
+				pstl::elem_t value;
+				{
+					auto && h = bench.host_view();
+					value     = h[index];
+				} // host_view dtor (NO_USM only) releases buffer back to device
+				last_output = pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench,
+				                                [=](const auto & val) { return val == value; });
 			}
 		}
+
+		auto verification_result = pstl::verify([&]() {
+			const auto solution = true;
+			return pstl::are_equivalent(last_output, solution);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

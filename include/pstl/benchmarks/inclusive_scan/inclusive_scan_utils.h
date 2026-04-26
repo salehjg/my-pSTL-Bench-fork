@@ -4,6 +4,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "pstl/utils/bench_input.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -20,21 +21,20 @@ namespace benchmark_inclusive_scan
 
 		auto output = pstl::get_vector<Policy>(size);
 
-		std::optional<bool> verification_passed;
-
-		for (auto _ : state)
 		{
-			pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, input, output);
-
-			if (not verification_passed.has_value())
+			pstl::bench_input bench_in{ input };
+			pstl::bench_input bench_out{ output };
+			for (auto _ : state)
 			{
-				verification_passed = pstl::verify([&]() {
-					auto solution = pstl::get_vector<Policy>(size);
-					std::inclusive_scan(input.begin(), input.end(), solution.begin());
-					return pstl::are_equivalent(output, solution);
-				});
+				pstl::wrap_timing(state, std::forward<Function>(F), execution_policy, bench_in, bench_out);
 			}
 		}
+
+		auto verification_passed = pstl::verify([&]() {
+			auto solution = pstl::get_vector<Policy>(size);
+			std::inclusive_scan(input.begin(), input.end(), solution.begin());
+			return pstl::are_equivalent(output, solution);
+		});
 
 		state.SetBytesProcessed(pstl::computed_bytes(state, input));
 

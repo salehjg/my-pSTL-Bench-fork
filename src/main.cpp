@@ -59,8 +59,11 @@ int main(int argc, char ** argv)
 
 #if defined(PSTL_BENCH_ONEDPL_GPU_USM)
 	benchmark::AddCustomContext("gpu_memory", "USM_shared");
+#elif defined(PSTL_BENCH_ONEDPL_GPU_NO_USM)
+	benchmark::AddCustomContext("gpu_memory", "persistent_buffer");
 #elif defined(PSTL_BENCH_USE_GPU)
-	benchmark::AddCustomContext("gpu_memory", "host_iterators");
+	// NVHPC_CUDA, NVHPC_OMP target offload — no oneDPL memory model
+	benchmark::AddCustomContext("gpu_memory", "n/a");
 #else
 	benchmark::AddCustomContext("gpu_memory", "none");
 #endif
