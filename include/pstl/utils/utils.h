@@ -38,7 +38,9 @@ namespace pstl
 	 */
 	static auto container_size(const auto & container)
 	{
-		using base_type = std::decay_t<decltype(container)>;
+		// Fixes the througput issue; from upstream commit: 
+		// https://github.com/parlab-tuwien/pSTL-Bench/commit/4891b30835f5ba0eb5ebb58e0af2913bdcb14b1e
+		using base_type = std::decay_t<decltype(container)>::value_type; // <----- ::value_type
 		return sizeof(base_type) * container.size() + sizeof(container);
 	}
 
