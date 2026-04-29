@@ -24,6 +24,16 @@ add_compile_definitions(PSTL_BENCH_USE_GPU)
 add_compile_definitions(PSTL_BENCH_USE_ONEDPL)
 add_compile_definitions(PSTL_BENCH_BACKEND="ACPP_ONEDPL")
 
+# Enable the std::_Exit fast-path at end of main (see src/main.cpp). acpp
+# 25.10 + oneDPL has an upstream bug in `hipsycl::common::allocation_map::erase`
+# that fires during __cxa_finalize at process exit — the benchmark itself
+# completes, the .done sentinel and JSON are flushed by benchmark::Shutdown()
+# before the crash, but the kernel reports SIGSEGV/SIGBUS and we get
+# exit 134/135/139. _Exit skips __cxa_finalize entirely and the process
+# exits 0 cleanly. Other backends keep their normal shutdown semantics.
+# Diagnosis: misc/acpp_onedpl_repro/ ; analysis: docs/notes/acpp_stdpar_sort_template_bug.md.
+add_compile_definitions(PSTL_BENCH_QUICK_EXIT_AT_END)
+
 # Memory model — same convention as ONEDPL_GPU: must be set explicitly.
 #   USM     -> sycl::malloc_shared (host-addressable, auto-migrated)
 #   NO_USM  -> persistent sycl::buffer over the host vector

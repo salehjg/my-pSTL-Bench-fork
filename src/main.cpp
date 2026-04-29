@@ -121,6 +121,24 @@ int main(int argc, char ** argv)
 	benchmark::RunSpecifiedBenchmarks();
 	benchmark::Shutdown();
 
+#ifdef PSTL_BENCH_QUICK_EXIT_AT_END
+	// Some backends (currently only ACPP_ONEDPL) hit a process-exit
+	// crash inside their own runtime's __cxa_finalize handlers — see
+	// docs/notes/acpp_stdpar_sort_template_bug.md. The benchmark output
+	// and the .done sentinel (written below) are already flushed by
+	// benchmark::Shutdown() above, so skipping the C++ static-destructor
+	// chain via std::_Exit doesn't lose anything observable. Defined by
+	// the affected backend's cmake file.
+	{
+		const char * status_path = std::getenv("PSTL_BENCH_STATUS_FILE");
+		if (status_path)
+		{
+			std::ofstream(status_path) << "OK" << std::endl;
+		}
+		std::_Exit(EXIT_SUCCESS);
+	}
+#endif
+
 #ifdef PSTL_BENCH_USE_LIKWID
 	LIKWID_MARKER_CLOSE;
 #endif

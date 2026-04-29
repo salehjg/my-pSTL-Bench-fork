@@ -46,7 +46,11 @@ cmake --build cmake-build-gcc/ --target pSTL-Bench
 One must define which backend to be used and which compiler.
 You can define the backend with `-DPSTL_BENCH_BACKEND=...` and the compiler with `-DCMAKE_CXX_COMPILER=...`.
 In the example above we will use g++ with TBB.
-A list of supported backends can be seen in `./cmake/`.
+A list of supported backends can be seen in `./cmake/backends/`. Currently
+registered: `TBB`, `HPX`, `GNU`, `NVHPC_OMP`, `NVHPC_CUDA`, `ONEDPL_CPU`,
+`ONEDPL_GPU`, `ACPP` (AdaptiveCpp stdpar — both CPU and GPU via runtime
+device selection), and `ACPP_ONEDPL` (oneDPL hosted on AdaptiveCpp's
+SYCL runtime, USM and NO_USM memory modes).
 
 Other options are:
 
@@ -118,3 +122,8 @@ Some parallel STL backends have dependencies:
 - HPX can be found on their [GitHub](https://github.com/STEllAR-GROUP/hpx) or
   their [website](https://hpx.stellar-group.org/).
 - NVHPC can be found on their [website](https://developer.nvidia.com/hpc-sdk).
+- AdaptiveCpp (acpp) can be found on
+  [GitHub](https://github.com/AdaptiveCpp/AdaptiveCpp). The `ACPP` and
+  `ACPP_ONEDPL` backends require acpp 25.10+ on PATH; build with
+  `-DCMAKE_CXX_COMPILER=acpp`. See `docs/notes/acpp_stdpar_sort_template_bug.md`
+  in the parent workspace for the upstream-bug workarounds applied here.
