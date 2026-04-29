@@ -65,6 +65,7 @@ register_backend(NVHPC_OMP)
 register_backend(ONEDPL_CPU)
 register_backend(ONEDPL_GPU)
 register_backend(ACPP)
+register_backend(ACPP_ONEDPL)
 
 # Define the BENCHMARK_COMPILER macro to ${CMAKE_CXX_COMPILER_ID}
 add_compile_definitions(PSTL_BENCH_COMPILER="${CMAKE_CXX_COMPILER_ID}")
