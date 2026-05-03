@@ -2,7 +2,21 @@
 
 #include "pstl/utils/benchmark_naming.h"
 
+// Per-backend benchmark_wrapper. CPU backends (TBB, GNU, HPX, NVHPC_OMP,
+// ONEDPL_CPU, ACPP-CPU) fall through to the shared host-prep utils. GPU
+// backends pick the matching utils header so the per-iter prep sorts run
+// on the device. See docs/notes/cpu_time_vs_real_time.md.
+#if defined(PSTL_BENCH_BACKEND_IS_ONEDPL_GPU)
+#include "inplace_merge_utils_onedpl_gpu.h"
+#elif defined(PSTL_BENCH_BACKEND_IS_ACPP_ONEDPL)
+#include "inplace_merge_utils_acpp_onedpl.h"
+#elif defined(PSTL_BENCH_BACKEND_IS_ACPP_STDPAR)
+#include "inplace_merge_utils_acpp_stdpar.h"
+#elif defined(PSTL_BENCH_BACKEND_IS_NVHPC_CUDA)
+#include "inplace_merge_utils_nvhpc_cuda.h"
+#else
 #include "inplace_merge_utils.h"
+#endif
 
 #include "inplace_merge_std.h"
 

@@ -24,6 +24,10 @@ add_compile_definitions(PSTL_BENCH_USE_GPU)
 add_compile_definitions(PSTL_BENCH_USE_ONEDPL)
 add_compile_definitions(PSTL_BENCH_BACKEND="ACPP_ONEDPL")
 
+# Per-backend distinguisher used by include/pstl/benchmarks/<algo>/group.h
+# to pick the matching <algo>_utils_acpp_onedpl.h.
+add_compile_definitions(PSTL_BENCH_BACKEND_IS_ACPP_ONEDPL)
+
 # Enable the std::_Exit fast-path at end of main (see src/main.cpp). acpp
 # 25.10 + oneDPL has an upstream bug in `hipsycl::common::allocation_map::erase`
 # that fires during __cxa_finalize at process exit — the benchmark itself

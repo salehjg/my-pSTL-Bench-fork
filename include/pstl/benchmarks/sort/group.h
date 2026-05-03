@@ -2,7 +2,20 @@
 
 #include "pstl/utils/benchmark_naming.h"
 
+// Per-backend benchmark_wrapper. CPU backends fall through to the shared
+// host-prep utils. GPU backends pick the matching utils header.
+// See docs/notes/cpu_time_vs_real_time.md.
+#if defined(PSTL_BENCH_BACKEND_IS_ONEDPL_GPU)
+#include "sort_utils_onedpl_gpu.h"
+#elif defined(PSTL_BENCH_BACKEND_IS_ACPP_ONEDPL)
+#include "sort_utils_acpp_onedpl.h"
+#elif defined(PSTL_BENCH_BACKEND_IS_ACPP_STDPAR)
+#include "sort_utils_acpp_stdpar.h"
+#elif defined(PSTL_BENCH_BACKEND_IS_NVHPC_CUDA)
+#include "sort_utils_nvhpc_cuda.h"
+#else
 #include "sort_utils.h"
+#endif
 
 #include "sort_std.h"
 

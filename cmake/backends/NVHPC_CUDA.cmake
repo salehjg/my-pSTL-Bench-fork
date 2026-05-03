@@ -9,6 +9,10 @@ add_compile_definitions(PSTL_BENCH_USE_GPU)
 
 add_compile_definitions(PSTL_BENCH_BACKEND="NVHPC_CUDA")
 
+# Per-backend distinguisher used by include/pstl/benchmarks/<algo>/group.h
+# to pick the matching <algo>_utils_nvhpc_cuda.h.
+add_compile_definitions(PSTL_BENCH_BACKEND_IS_NVHPC_CUDA)
+
 # Allow scripts to override -stdpar (e.g. -stdpar=gpu) via CMAKE_CXX_FLAGS.
 # Only append the default -stdpar if no -stdpar flag is already present.
 if (NOT CMAKE_CXX_FLAGS MATCHES "-stdpar")

@@ -2,7 +2,21 @@
 
 #include "pstl/utils/benchmark_naming.h"
 
+// Per-backend benchmark_wrapper. CPU backends fall through to the shared
+// host-prep utils. GPU backends pick the matching utils header so the
+// per-iter output reset (std::fill) runs on the device.
+// See docs/notes/cpu_time_vs_real_time.md.
+#if defined(PSTL_BENCH_BACKEND_IS_ONEDPL_GPU)
+#include "set_intersection_utils_onedpl_gpu.h"
+#elif defined(PSTL_BENCH_BACKEND_IS_ACPP_ONEDPL)
+#include "set_intersection_utils_acpp_onedpl.h"
+#elif defined(PSTL_BENCH_BACKEND_IS_ACPP_STDPAR)
+#include "set_intersection_utils_acpp_stdpar.h"
+#elif defined(PSTL_BENCH_BACKEND_IS_NVHPC_CUDA)
+#include "set_intersection_utils_nvhpc_cuda.h"
+#else
 #include "set_intersection_utils.h"
+#endif
 
 #include "set_intersection_std.h"
 
