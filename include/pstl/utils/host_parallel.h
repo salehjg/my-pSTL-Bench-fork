@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 
 #ifdef PSTL_BENCH_USE_GPU
 #include <tbb/parallel_sort.h>
@@ -25,7 +26,7 @@ namespace pstl
 	{
 #ifdef PSTL_BENCH_USE_GPU
 		const auto n = std::distance(first, last);
-		tbb::parallel_for(tbb::blocked_range<decltype(n)>(0, n),
+		tbb::parallel_for(tbb::blocked_range<std::ptrdiff_t>(0, n),
 		                   [first, &value](const auto & r) {
 			                   std::fill(first + r.begin(), first + r.end(), value);
 		                   });
