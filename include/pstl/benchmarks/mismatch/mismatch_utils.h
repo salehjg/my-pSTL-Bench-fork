@@ -30,8 +30,11 @@ namespace benchmark_mismatch
 		{
 			pstl::bench_input bench1{ data1 };
 			pstl::bench_input bench2{ data2 };
+			double total_stl_ns = 0;
 			for (auto _ : state)
 			{
+				pstl::detail::per_iter_stl_ns() = 0;
+				const auto _iter_t0 = std::chrono::high_resolution_clock::now();
 				const auto idx = gen(rng);
 				last_idx       = idx;
 				{
@@ -50,6 +53,9 @@ namespace benchmark_mismatch
 					auto && h1 = bench1.host_view();
 					h2[idx]    = h1[idx];
 				}
+				const auto _iter_t1 = std::chrono::high_resolution_clock::now();
+				total_stl_ns += pstl::detail::per_iter_stl_ns();
+				state.SetIterationTime(std::chrono::duration<double>(_iter_t1 - _iter_t0).count());
 			}
 		}
 
@@ -62,7 +68,15 @@ namespace benchmark_mismatch
 			return (solution.first - data1.begin()) == last_first_offset;
 		});
 
-		state.SetBytesProcessed(pstl::computed_bytes(state, data1, data2));
+		// stl_of_intrest_ns: per-iter average GPU dispatch (F()) time.
+		state.counters["stl_of_intrest_ns"] = benchmark::Counter(
+		    total_stl_ns, benchmark::Counter::kAvgIterations);
+		// bytes_per_second: same value as the previous SetBytesProcessed-based
+		// emission (bytes_per_iter / avg_stl_seconds). See
+		// docs/notes/cpu_time_vs_real_time.md.
+		const double _bytes_per_iter = static_cast<double>(pstl::computed_bytes(state, data1, data2)) / static_cast<double>(state.iterations());
+		const double _avg_stl_seconds = (total_stl_ns / 1e9) / static_cast<double>(state.iterations());
+		state.counters["bytes_per_second"] = _bytes_per_iter / _avg_stl_seconds;
 
 		pstl::set_verification_counter(state, verification_result);
 	}

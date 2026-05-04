@@ -131,6 +131,20 @@ namespace pstl
 		(touch(args), ...);
 	}
 
+	namespace detail
+	{
+		// Per-iter slot for the F() wall-clock measured by wrap_timing. The
+		// outer for-loop in each benchmark_wrapper resets this to 0 at iter
+		// start and reads it at iter end to accumulate the total STL-of-
+		// interest time for the JSON 'stl_of_intrest_ns' counter.
+		// See docs/notes/cpu_time_vs_real_time.md.
+		inline double & per_iter_stl_ns()
+		{
+			static thread_local double v = 0.0;
+			return v;
+		}
+	} // namespace detail
+
 	// This function is used to wrap the timing of a function call -> F(args...) returning void
 	template<typename F, typename... Args>
 	auto wrap_timing(benchmark::State & state, F && f, Args &&... args)
@@ -147,7 +161,11 @@ namespace pstl
 		const auto end = std::chrono::high_resolution_clock::now();
 		hw_counters_end(state);
 		profiler_range_pop();
-		state.SetIterationTime(std::chrono::duration<double>(end - start).count());
+		// Record the F() wall-clock for the outer iter-loop to pick up.
+		// We do NOT call state.SetIterationTime here — the outer iter loop
+		// drives that with the full body wall clock so GB's iteration grower
+		// sees the real per-iter cost.
+		detail::per_iter_stl_ns() = std::chrono::duration<double, std::nano>(end - start).count();
 	}
 
 	// This function is used to wrap the timing of a function call -> F(args...) returning a value
@@ -167,7 +185,8 @@ namespace pstl
 		const auto end = std::chrono::high_resolution_clock::now();
 		hw_counters_end(state);
 		profiler_range_pop();
-		state.SetIterationTime(std::chrono::duration<double>(end - start).count());
+		// See note in the void overload above.
+		detail::per_iter_stl_ns() = std::chrono::duration<double, std::nano>(end - start).count();
 		return rv;
 	}
 } // namespace pstl
