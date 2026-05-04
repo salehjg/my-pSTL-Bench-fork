@@ -8,10 +8,6 @@ add_compile_definitions(PSTL_BENCH_USE_ONEDPL)
 
 add_compile_definitions(PSTL_BENCH_BACKEND="ONEDPL_GPU")
 
-# Per-backend distinguisher used by include/pstl/benchmarks/<algo>/group.h
-# to pick the matching <algo>_utils_onedpl_gpu.h.
-add_compile_definitions(PSTL_BENCH_BACKEND_IS_ONEDPL_GPU)
-
 # Memory model — must be set explicitly. No default.
 #   USM     -> sycl::malloc_shared (host-addressable, auto-migrated)
 #   NO_USM  -> persistent sycl::buffer over the host vector

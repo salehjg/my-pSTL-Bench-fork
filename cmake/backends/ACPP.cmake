@@ -29,10 +29,6 @@ set_property(CACHE PSTL_BENCH_ACPP_DEVICE PROPERTY STRINGS CPU GPU)
 
 if (PSTL_BENCH_ACPP_DEVICE STREQUAL "GPU")
     add_compile_definitions(PSTL_BENCH_USE_GPU)
-    # Per-backend distinguisher used by include/pstl/benchmarks/<algo>/group.h
-    # to pick the matching <algo>_utils_acpp_stdpar.h. Only set for the GPU
-    # device tag — the CPU tag still uses the shared <algo>_utils.h.
-    add_compile_definitions(PSTL_BENCH_BACKEND_IS_ACPP_STDPAR)
     message(STATUS "ACPP: device tag = GPU (PSTL_BENCH_USE_GPU defined)")
 elseif (PSTL_BENCH_ACPP_DEVICE STREQUAL "CPU")
     message(STATUS "ACPP: device tag = CPU")
