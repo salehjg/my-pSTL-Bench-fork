@@ -14,3 +14,14 @@ add_compile_definitions(PSTL_BENCH_BACKEND="NVHPC_CUDA")
 if (NOT CMAKE_CXX_FLAGS MATCHES "-stdpar")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdpar")
 endif ()
+
+# TBB for host-side parallel data preparation (host_parallel.h).
+# nvc++ -stdpar routes std::execution::par to the GPU, so host-side
+# setup calls (std::sort between iterations) can't use it. TBB's
+# parallel_sort is always CPU-threaded and independent of -stdpar.
+find_package(TBB REQUIRED)
+if (NOT TARGET TBB::tbb)
+    message(FATAL_ERROR "NVHPC_CUDA backend needs TBB (for host-side parallel setup). TBB::tbb not found.")
+endif ()
+message(STATUS "NVHPC_CUDA: linking TBB::tbb (for host-side parallel data preparation)")
+list(APPEND LINK_LIBRARIES TBB::tbb)

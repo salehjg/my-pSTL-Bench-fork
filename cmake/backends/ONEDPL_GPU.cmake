@@ -40,3 +40,13 @@ else ()
 endif ()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
+
+# TBB for host-side parallel data preparation (host_parallel.h).
+# oneDPL depends on TBB transitively, but finding it explicitly
+# ensures the TBB headers are on the include path for our code.
+find_package(TBB REQUIRED)
+if (NOT TARGET TBB::tbb)
+    message(FATAL_ERROR "ONEDPL_GPU backend needs TBB (for host-side parallel setup). TBB::tbb not found.")
+endif ()
+message(STATUS "ONEDPL_GPU: linking TBB::tbb (for host-side parallel data preparation)")
+list(APPEND LINK_LIBRARIES TBB::tbb)

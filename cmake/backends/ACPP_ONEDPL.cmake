@@ -106,6 +106,16 @@ else ()
     list(APPEND LINK_LIBRARIES oneDPL)
 endif ()
 
+# TBB for host-side parallel data preparation (host_parallel.h).
+# oneDPL depends on TBB transitively, but finding it explicitly
+# ensures the TBB headers are on the include path for our code.
+find_package(TBB REQUIRED)
+if (NOT TARGET TBB::tbb)
+    message(FATAL_ERROR "ACPP_ONEDPL backend needs TBB (for host-side parallel setup). TBB::tbb not found.")
+endif ()
+message(STATUS "ACPP_ONEDPL: linking TBB::tbb (for host-side parallel data preparation)")
+list(APPEND LINK_LIBRARIES TBB::tbb)
+
 # Defer link-side --acpp-* onto the project target so:
 #   - We don't pollute CMAKE_EXE_LINKER_FLAGS, which would break
 #     find_package(Threads) C-language link probes (clang as C linker

@@ -6,6 +6,7 @@
 #include <benchmark/benchmark.h>
 
 #include "pstl/utils/bench_input.h"
+#include "pstl/utils/host_parallel.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -41,7 +42,7 @@ namespace benchmark_set_intersection
 
 				{
 					auto && h = bench_out.host_view();
-					std::fill(std::begin(h), std::end(h), std::numeric_limits<pstl::elem_t>::quiet_NaN());
+					pstl::host_fill(std::begin(h), std::end(h), std::numeric_limits<pstl::elem_t>::quiet_NaN());
 				}
 			}
 		}

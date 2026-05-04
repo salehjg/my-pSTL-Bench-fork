@@ -5,6 +5,7 @@
 #include <benchmark/benchmark.h>
 
 #include "pstl/utils/bench_input.h"
+#include "pstl/utils/host_parallel.h"
 #include "pstl/utils/utils.h"
 #include "pstl/utils/verification.h"
 
@@ -30,8 +31,8 @@ namespace benchmark_merge
 					auto && h        = bench_in.host_view();
 					auto    h_middle = std::begin(h) + half;
 					std::shuffle(std::begin(h), std::end(h), std::mt19937{ std::random_device{}() });
-					std::sort(std::begin(h), h_middle);
-					std::sort(h_middle, std::end(h));
+					pstl::host_sort(std::begin(h), h_middle);
+					pstl::host_sort(h_middle, std::end(h));
 				}
 
 				auto middle = bench_in.begin() + half;
